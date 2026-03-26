@@ -68,8 +68,8 @@
 |---------|------|---------------|--------|------------|--------|
 | 0.2.1 | Async SQLAlchemy engine + session factory (pool_size=5) | `backend/app/core/database.py` | 0.25d | 0.1.2 | ✅ Done |
 | 0.2.2 | ORM Models cho P0 tables: `users`, `telegram_onboarding_tokens` (**user_id nullable** + `telegram_chat_id` column), `watchlist_items`, `notification_logs`, `stock_tickers`, `analytics_events` | `backend/app/models/` | 0.5d | 0.2.1 | ✅ Done |
-| 0.2.3 | Alembic migrations — 6 files theo sprint scope (không tạo P3/P4 tables): `001_auth_users`, `002_subscriptions`, `003_watchlist`, `004_newsletter`, `005_market_data`, `006_analytics` | `backend/alembic/versions/` | 0.5d | 0.2.2 | ⏳ Next |
-| 0.2.4 | Seed data: `subscription_plans` (free/pro/premium) + `stock_tickers` từ HOSE/HNX/UPCOM CSV | `backend/alembic/versions/002` | 0.25d | 0.2.3 | 🔲 Pending |
+| 0.2.3 | Alembic migrations — 6 files theo sprint scope (không tạo P3/P4 tables): `001_auth_users`, `002_subscriptions`, `003_watchlist`, `004_newsletter`, `005_market_data`, `006_analytics` | `backend/alembic/versions/` | 0.5d | 0.2.2 | ✅ Done |
+| 0.2.4 | Seed data: `subscription_plans` (free/pro/premium) + `stock_tickers` từ HOSE/HNX/UPCOM CSV | `backend/alembic/versions/002` | 0.25d | 0.2.3 | ✅ Done (subscription_plans seeded trong migration 002) |
 | 0.2.5 | `UserRepository`: `find_by_google_id`, `find_by_telegram_chat_id`, `create`, `update_telegram_link` — tất cả return new objects (immutable) | `backend/app/repositories/user_repo.py` | 0.25d | 0.2.2 | 🔲 Pending |
 | 0.2.6 | Unit tests: schema constraints (unique, check), repository CRUD với test DB | `backend/tests/unit/test_user_repo.py` | 0.25d | 0.2.5 | 🔲 Pending |
 
@@ -109,6 +109,26 @@
 **Ghi chú thực tế:**
 - `TIMESTAMPTZ` không tồn tại trong SQLAlchemy — dùng `TIMESTAMP(timezone=True)` thay thế
 - `Base.metadata` đăng ký đúng 11 tables: `analytics_events`, `newsletter_campaigns`, `newsletter_sends`, `oauth_sessions`, `stock_tickers`, `subscription_plans`, `telegram_bot_events`, `telegram_onboarding_tokens`, `user_subscriptions`, `users`, `watchlist_items`
+
+### Kết quả Task 0.2.3 + 0.2.4 (2026-03-26)
+
+**Files đã tạo:**
+
+| File | Tables được tạo | Ghi chú |
+|------|-----------------|---------|
+| `backend/alembic/versions/20260326_001_auth_users.py` | `users`, `oauth_sessions`, `telegram_onboarding_tokens` + `trigger_set_updated_at()` function | |
+| `backend/alembic/versions/20260326_002_subscriptions.py` | `subscription_plans`, `user_subscriptions` | Seed 3 plans (free/pro/premium) dùng parameterized INSERT |
+| `backend/alembic/versions/20260326_003_watchlist.py` | `watchlist_items` | |
+| `backend/alembic/versions/20260326_004_newsletter.py` | `newsletter_campaigns`, `newsletter_sends`, `telegram_bot_events` | |
+| `backend/alembic/versions/20260326_005_market_data.py` | `stock_tickers` | |
+| `backend/alembic/versions/20260326_006_analytics.py` | `analytics_events` | Append-only event store |
+
+**Verified:** `alembic upgrade head` thành công, 12 tables (+ `alembic_version`) tồn tại trong DB. Seed data 3 plans đã được insert.
+
+**Bugs gặp phải và fix:**
+1. `asyncpg` không cho phép nhiều SQL commands trong một `op.execute()` → split thành nhiều lời gọi riêng
+2. `server_default="'{}'"` cho JSONB bị double-quoted bởi asyncpg → fix: dùng `server_default=sa.text("'{}'")`
+3. `:true`/`:false` trong JSON string bị SQLAlchemy hiểu là named bind params → fix: dùng parameterized INSERT với `json.dumps()` thay vì inline JSON literal
 
 ---
 
