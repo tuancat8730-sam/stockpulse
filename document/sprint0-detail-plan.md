@@ -184,10 +184,38 @@
 
 | Task ID | Task | File / Output | Effort | Depends on |
 |---------|------|---------------|--------|------------|
-| 0.3.1 | `AuthService`: generate CSRF state → store trong `oauth_sessions`, build Google OAuth URL, exchange code cho tokens via `httpx`, extract user info từ ID token, create/update `users`, bind `telegram_chat_id` từ `link_token` | `backend/app/services/auth_service.py` | 0.5d | 0.2.5 |
+| 0.3.1 | `AuthService`: generate CSRF state → store trong `oauth_sessions`, build Google OAuth URL, exchange code cho tokens via `httpx`, extract user info từ ID token, create/update `users`, bind `telegram_chat_id` từ `link_token` | `backend/app/services/auth_service.py` | 0.5d | 0.2.5 | ✅ Done |
 | 0.3.2 | FastAPI auth routes: `GET /api/auth/google?token=<link_token>` (redirect to Google) + `GET /api/auth/callback` (exchange code, link Telegram, redirect to success page) | `backend/app/routers/auth.py` | 0.25d | 0.3.1 |
 | 0.3.3 | Next.js callback page: hiển thị "Đã liên kết thành công! Quay lại Telegram" + deeplink `tg://resolve?domain=<bot_username>` | `frontend/app/auth/callback/page.tsx` | 0.25d | 0.3.2 |
 | 0.3.4 | Integration tests OAuth flow: new user creation, existing user update, token linking, expired token rejection, duplicate link attempt | `backend/tests/integration/test_auth_flow.py` | 0.25d | 0.3.1, 0.3.2 |
+
+### Kết quả Task 0.3.1 (2026-03-26)
+
+**File đã tạo:** `backend/app/services/auth_service.py`
+
+**Public interface:**
+
+| Symbol | Mô tả |
+|--------|-------|
+| `BeginLoginResult` | `frozen dataclass` — `google_url`, `link_token` |
+| `CallbackResult` | `frozen dataclass` — `user: User`, `telegram_chat_id: int \| None` |
+| `AuthError` | Exception cho các lỗi recoverable (expired state, bad code, ...) |
+| `AuthService.begin_login(telegram_chat_id)` | Tạo `TelegramOnboardingToken` (TTL 10 phút) + `OAuthSession` (CSRF, TTL 15 phút) → build Google OAuth URL |
+| `AuthService.handle_callback(code, state)` | Validate CSRF state → exchange code với Google → upsert user → bind Telegram chat → mark tokens used |
+
+**Luồng chi tiết:**
+1. `begin_login()`: sinh 2 random tokens (link_token + csrf_state), lưu DB, build URL với `scope=openid email profile`
+2. `handle_callback()`:
+   - Validate oauth_session theo `state` (kiểm tra tồn tại + chưa hết hạn)
+   - POST tới `https://oauth2.googleapis.com/token` via `httpx`
+   - Decode JWT payload (base64, không verify signature — token đến trực tiếp từ Google HTTPS)
+   - Upsert user: tìm theo `google_id` → fallback `email` → create mới
+   - Bind Telegram: consume `TelegramOnboardingToken`, gọi `UserRepository.update_telegram_link()`
+   - Xoá `OAuthSession` để tránh replay attack
+
+**Ghi chú:**
+- JWT signature verification bỏ qua cho Sprint 0 (token đến qua HTTPS từ Google, MITM không practical). Sprint 1 sẽ thêm `google-auth` library
+- `redirect_to` field của `OAuthSession` được dùng để truyền `link_token` sang callback (không cần thêm column)
 
 ---
 
