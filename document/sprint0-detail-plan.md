@@ -64,16 +64,31 @@
 
 ## Phase 0.2 — Database Setup (Day 2–3)
 
-| Task ID | Task | File / Output | Effort | Depends on |
-|---------|------|---------------|--------|------------|
-| 0.2.1 | Async SQLAlchemy engine + session factory (pool_size=5) | `backend/app/core/database.py` | 0.25d | 0.1.2 |
-| 0.2.2 | ORM Models cho P0 tables: `users`, `telegram_onboarding_tokens` (**user_id nullable** + `telegram_chat_id` column), `watchlist_items`, `notification_logs`, `stock_tickers`, `analytics_events` | `backend/app/models/` | 0.5d | 0.2.1 |
-| 0.2.3 | Alembic migrations — 6 files theo sprint scope (không tạo P3/P4 tables): `001_auth_users`, `002_subscriptions`, `003_watchlist`, `004_newsletter`, `005_market_data`, `006_analytics` | `backend/alembic/versions/` | 0.5d | 0.2.2 |
-| 0.2.4 | Seed data: `subscription_plans` (free/pro/premium) + `stock_tickers` từ HOSE/HNX/UPCOM CSV | `backend/alembic/versions/002` | 0.25d | 0.2.3 |
-| 0.2.5 | `UserRepository`: `find_by_google_id`, `find_by_telegram_chat_id`, `create`, `update_telegram_link` — tất cả return new objects (immutable) | `backend/app/repositories/user_repo.py` | 0.25d | 0.2.2 |
-| 0.2.6 | Unit tests: schema constraints (unique, check), repository CRUD với test DB | `backend/tests/unit/test_user_repo.py` | 0.25d | 0.2.5 |
+| Task ID | Task | File / Output | Effort | Depends on | Status |
+|---------|------|---------------|--------|------------|--------|
+| 0.2.1 | Async SQLAlchemy engine + session factory (pool_size=5) | `backend/app/core/database.py` | 0.25d | 0.1.2 | ✅ Done |
+| 0.2.2 | ORM Models cho P0 tables: `users`, `telegram_onboarding_tokens` (**user_id nullable** + `telegram_chat_id` column), `watchlist_items`, `notification_logs`, `stock_tickers`, `analytics_events` | `backend/app/models/` | 0.5d | 0.2.1 | ⏳ Next |
+| 0.2.3 | Alembic migrations — 6 files theo sprint scope (không tạo P3/P4 tables): `001_auth_users`, `002_subscriptions`, `003_watchlist`, `004_newsletter`, `005_market_data`, `006_analytics` | `backend/alembic/versions/` | 0.5d | 0.2.2 | 🔲 Pending |
+| 0.2.4 | Seed data: `subscription_plans` (free/pro/premium) + `stock_tickers` từ HOSE/HNX/UPCOM CSV | `backend/alembic/versions/002` | 0.25d | 0.2.3 | 🔲 Pending |
+| 0.2.5 | `UserRepository`: `find_by_google_id`, `find_by_telegram_chat_id`, `create`, `update_telegram_link` — tất cả return new objects (immutable) | `backend/app/repositories/user_repo.py` | 0.25d | 0.2.2 | 🔲 Pending |
+| 0.2.6 | Unit tests: schema constraints (unique, check), repository CRUD với test DB | `backend/tests/unit/test_user_repo.py` | 0.25d | 0.2.5 | 🔲 Pending |
 
 **Lưu ý schema critical:** `telegram_onboarding_tokens.user_id` PHẢI là nullable vì user chưa tồn tại khi /start được gọi lần đầu.
+
+### Kết quả Task 0.2.1 (2026-03-26)
+
+**Commit:** `b30bd52` — `feat: task 0.2.1 — async SQLAlchemy engine, session factory, Alembic setup`
+
+**Files đã tạo:**
+
+| File | Nội dung |
+|------|----------|
+| `backend/app/core/database.py` | `create_engine()`, `init_db()`, `close_db()`, `get_session()` (async context manager với auto commit/rollback), `get_db_session()` (FastAPI dependency) — pool_size=5, pool_pre_ping=True, pool_recycle=3600 |
+| `backend/alembic.ini` | Config với UTC timezone, file template có date prefix |
+| `backend/alembic/env.py` | Async migration runner, đọc `DATABASE_URL` từ Pydantic Settings, import tất cả models qua `app.models` |
+| `backend/app/models/__init__.py` | Model registry — import models vào đây để Alembic auto-detect |
+
+**Verified:** `PostgreSQL 16.13` kết nối OK qua `asyncpg` trên `localhost:5433`
 
 ---
 
