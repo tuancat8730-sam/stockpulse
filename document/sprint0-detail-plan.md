@@ -67,8 +67,8 @@
 | Task ID | Task | File / Output | Effort | Depends on | Status |
 |---------|------|---------------|--------|------------|--------|
 | 0.2.1 | Async SQLAlchemy engine + session factory (pool_size=5) | `backend/app/core/database.py` | 0.25d | 0.1.2 | ✅ Done |
-| 0.2.2 | ORM Models cho P0 tables: `users`, `telegram_onboarding_tokens` (**user_id nullable** + `telegram_chat_id` column), `watchlist_items`, `notification_logs`, `stock_tickers`, `analytics_events` | `backend/app/models/` | 0.5d | 0.2.1 | ⏳ Next |
-| 0.2.3 | Alembic migrations — 6 files theo sprint scope (không tạo P3/P4 tables): `001_auth_users`, `002_subscriptions`, `003_watchlist`, `004_newsletter`, `005_market_data`, `006_analytics` | `backend/alembic/versions/` | 0.5d | 0.2.2 | 🔲 Pending |
+| 0.2.2 | ORM Models cho P0 tables: `users`, `telegram_onboarding_tokens` (**user_id nullable** + `telegram_chat_id` column), `watchlist_items`, `notification_logs`, `stock_tickers`, `analytics_events` | `backend/app/models/` | 0.5d | 0.2.1 | ✅ Done |
+| 0.2.3 | Alembic migrations — 6 files theo sprint scope (không tạo P3/P4 tables): `001_auth_users`, `002_subscriptions`, `003_watchlist`, `004_newsletter`, `005_market_data`, `006_analytics` | `backend/alembic/versions/` | 0.5d | 0.2.2 | ⏳ Next |
 | 0.2.4 | Seed data: `subscription_plans` (free/pro/premium) + `stock_tickers` từ HOSE/HNX/UPCOM CSV | `backend/alembic/versions/002` | 0.25d | 0.2.3 | 🔲 Pending |
 | 0.2.5 | `UserRepository`: `find_by_google_id`, `find_by_telegram_chat_id`, `create`, `update_telegram_link` — tất cả return new objects (immutable) | `backend/app/repositories/user_repo.py` | 0.25d | 0.2.2 | 🔲 Pending |
 | 0.2.6 | Unit tests: schema constraints (unique, check), repository CRUD với test DB | `backend/tests/unit/test_user_repo.py` | 0.25d | 0.2.5 | 🔲 Pending |
@@ -89,6 +89,26 @@
 | `backend/app/models/__init__.py` | Model registry — import models vào đây để Alembic auto-detect |
 
 **Verified:** `PostgreSQL 16.13` kết nối OK qua `asyncpg` trên `localhost:5433`
+
+### Kết quả Task 0.2.2 (2026-03-26)
+
+**Commit:** `052d75e` — `feat: task 0.2.2 — ORM models for all P0 tables (11 tables)`
+
+**Files đã tạo:**
+
+| File | Tables | Ghi chú |
+|------|--------|---------|
+| `backend/app/models/user.py` | `users`, `oauth_sessions`, `telegram_onboarding_tokens` | `TelegramOnboardingToken.user_id` nullable (schema fix); thêm `telegram_chat_id` column |
+| `backend/app/models/subscription.py` | `subscription_plans`, `user_subscriptions` | |
+| `backend/app/models/watchlist.py` | `watchlist_items` | `UniqueConstraint(user_id, ticker)` |
+| `backend/app/models/newsletter.py` | `newsletter_campaigns`, `newsletter_sends`, `telegram_bot_events` | `NewsletterSend` có open tracking via `open_token` |
+| `backend/app/models/market_data.py` | `stock_tickers` | |
+| `backend/app/models/analytics.py` | `analytics_events` | Append-only, không update/delete |
+| `backend/app/models/__init__.py` | — | Đăng ký tất cả 11 tables cho Alembic auto-detect |
+
+**Ghi chú thực tế:**
+- `TIMESTAMPTZ` không tồn tại trong SQLAlchemy — dùng `TIMESTAMP(timezone=True)` thay thế
+- `Base.metadata` đăng ký đúng 11 tables: `analytics_events`, `newsletter_campaigns`, `newsletter_sends`, `oauth_sessions`, `stock_tickers`, `subscription_plans`, `telegram_bot_events`, `telegram_onboarding_tokens`, `user_subscriptions`, `users`, `watchlist_items`
 
 ---
 
