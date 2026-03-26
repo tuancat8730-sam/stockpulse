@@ -12,16 +12,43 @@
 
 ---
 
-## Phase 0.1 — Project Scaffolding (Day 1–2)
+## Phase 0.1 — Project Scaffolding (Day 1–2) ✅ DONE
 
-| Task ID | Task | File / Output | Effort | Depends on |
-|---------|------|---------------|--------|------------|
-| 0.1.1 | Tạo monorepo structure + `pyproject.toml` (fastapi, uvicorn, python-telegram-bot, sqlalchemy, asyncpg, alembic, redis, apscheduler, posthog, httpx, pydantic-settings, pytest) | `backend/pyproject.toml` | 0.25d | — |
-| 0.1.2 | Pydantic Settings — validate tất cả env vars khi startup | `backend/app/config.py` | 0.25d | 0.1.1 |
-| 0.1.3 | Docker Compose local dev (PostgreSQL 16 + Redis 7, healthchecks, volumes) | `infra/docker-compose.yml` | 0.25d | — |
-| 0.1.4 | Next.js 14 minimal app — chỉ `/auth/google` + `/auth/callback` routes | `frontend/` | 0.25d | — |
-| 0.1.5 | GitHub Actions CI (ruff lint + mypy + pytest) | `.github/workflows/ci.yml` | 0.25d | 0.1.1 |
-| 0.1.6 | `.env.example` với tất cả required secrets | `infra/.env.example` | 0.1d | 0.1.2 |
+| Task ID | Task | File / Output | Effort | Depends on | Status |
+|---------|------|---------------|--------|------------|--------|
+| 0.1.1 | Tạo monorepo structure + `pyproject.toml` (fastapi, uvicorn, python-telegram-bot, sqlalchemy, asyncpg, alembic, redis, apscheduler, posthog, httpx, pydantic-settings, pytest) | `backend/pyproject.toml` | 0.25d | — | ✅ Done |
+| 0.1.2 | Pydantic Settings — validate tất cả env vars khi startup | `backend/app/config.py` | 0.25d | 0.1.1 | ✅ Done |
+| 0.1.3 | Docker Compose local dev (PostgreSQL 16 + Redis 7, healthchecks, volumes) | `infra/docker-compose.yml` | 0.25d | — | ✅ Done |
+| 0.1.4 | Next.js 14 minimal app — chỉ `/auth/google` + `/auth/callback` routes | `frontend/` | 0.25d | — | ✅ Done |
+| 0.1.5 | GitHub Actions CI (ruff lint + mypy + pytest) | `.github/workflows/ci.yml` | 0.25d | 0.1.1 | ✅ Done |
+| 0.1.6 | `.env.example` với tất cả required secrets | `infra/.env.example` | 0.1d | 0.1.2 | ✅ Done |
+
+### Kết quả Task 0.1.1 (2026-03-26)
+
+**Commit:** `f890975` — `feat: task 0.1.1 — monorepo scaffolding, pyproject.toml, CI, Docker`
+
+**Files đã tạo:**
+
+| File | Nội dung |
+|------|----------|
+| `backend/pyproject.toml` | 14 runtime deps + ruff/mypy/pytest, Python 3.12, coverage ≥80% |
+| `backend/app/config.py` | Pydantic Settings, validate APP_SECRET_KEY ≥32 chars, auto-fix asyncpg URL |
+| `infra/docker-compose.yml` | PostgreSQL 16 (port 5433) + Redis 7 (port 6380), healthchecks, volumes |
+| `infra/.env.example` | 14 secrets documented với hướng dẫn |
+| `frontend/package.json` | Next.js 14.2.29 + TypeScript + Tailwind |
+| `frontend/src/app/auth/callback/page.tsx` | OAuth callback: loading/success/error states, deeplink Telegram |
+| `frontend/src/app/layout.tsx` | Root layout |
+| `frontend/src/app/page.tsx` | Landing page placeholder |
+| `.github/workflows/ci.yml` | CI: ruff + mypy + pytest (Python) với Postgres/Redis services; lint + build (Next.js) |
+| `.gitignore` | Exclude .env, node_modules, __pycache__, .venv |
+| `README.md` | Quick start guide |
+| `backend/app/` | Package structure: models/, repositories/, services/, routers/, bot/handlers/, core/, jobs/ |
+
+**Ghi chú thực tế:**
+- Dùng `python-telegram-bot>=21.0` (không phải v20 như plan, v21 là stable mới nhất)
+- PostgreSQL port 5433 (tránh conflict với host PostgreSQL mặc định 5432)
+- Redis port 6380 (tránh conflict với host Redis mặc định 6379)
+- `config.py` tự động convert `postgresql://` → `postgresql+asyncpg://` để đảm bảo async driver
 
 **Required secrets (`.env.example`):**
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
@@ -105,15 +132,15 @@
 
 ## Tổng hợp
 
-| Phase | Ngày | Effort | Deliverable chính |
-|-------|------|--------|-------------------|
-| 0.1 Project Scaffolding | 1–2 | 1.3d | Monorepo, Docker, CI |
-| 0.2 Database | 2–3 | 2.0d | Schema, migrations, UserRepo |
-| 0.3 Google OAuth | 3–4.5 | 1.25d | OAuth flow end-to-end |
-| 0.4 Analytics | 4.5–5.5 | 0.6d | PostHog + 9 events |
-| 0.5 FastAPI + Bot /start | 5.5–7 | 1.7d | Bot hoạt động, link flow |
-| 0.6 E2E Verification | 7 | 0.6d | "Bot hoạt động ổn" confirmed |
-| **Total** | **7 ngày** | **~7.5d** | **Sprint 0 Done** |
+| Phase | Ngày | Effort | Deliverable chính | Status |
+|-------|------|--------|-------------------|--------|
+| 0.1 Project Scaffolding | 1–2 | 1.3d | Monorepo, Docker, CI | ✅ Done |
+| 0.2 Database | 2–3 | 2.0d | Schema, migrations, UserRepo | ⏳ Next |
+| 0.3 Google OAuth | 3–4.5 | 1.25d | OAuth flow end-to-end | 🔲 Pending |
+| 0.4 Analytics | 4.5–5.5 | 0.6d | PostHog + 9 events | 🔲 Pending |
+| 0.5 FastAPI + Bot /start | 5.5–7 | 1.7d | Bot hoạt động, link flow | 🔲 Pending |
+| 0.6 E2E Verification | 7 | 0.6d | "Bot hoạt động ổn" confirmed | 🔲 Pending |
+| **Total** | **7 ngày** | **~7.5d** | **Sprint 0 Done** | **1/6 phases** |
 
 ---
 
