@@ -70,7 +70,7 @@
 | 0.2.2 | ORM Models cho P0 tables: `users`, `telegram_onboarding_tokens` (**user_id nullable** + `telegram_chat_id` column), `watchlist_items`, `notification_logs`, `stock_tickers`, `analytics_events` | `backend/app/models/` | 0.5d | 0.2.1 | ✅ Done |
 | 0.2.3 | Alembic migrations — 6 files theo sprint scope (không tạo P3/P4 tables): `001_auth_users`, `002_subscriptions`, `003_watchlist`, `004_newsletter`, `005_market_data`, `006_analytics` | `backend/alembic/versions/` | 0.5d | 0.2.2 | ✅ Done |
 | 0.2.4 | Seed data: `subscription_plans` (free/pro/premium) + `stock_tickers` từ HOSE/HNX/UPCOM CSV | `backend/alembic/versions/002` | 0.25d | 0.2.3 | ✅ Done (subscription_plans seeded trong migration 002) |
-| 0.2.5 | `UserRepository`: `find_by_google_id`, `find_by_telegram_chat_id`, `create`, `update_telegram_link` — tất cả return new objects (immutable) | `backend/app/repositories/user_repo.py` | 0.25d | 0.2.2 | 🔲 Pending |
+| 0.2.5 | `UserRepository`: `find_by_google_id`, `find_by_telegram_chat_id`, `create`, `update_telegram_link` — tất cả return new objects (immutable) | `backend/app/repositories/user_repo.py` | 0.25d | 0.2.2 | ✅ Done |
 | 0.2.6 | Unit tests: schema constraints (unique, check), repository CRUD với test DB | `backend/tests/unit/test_user_repo.py` | 0.25d | 0.2.5 | 🔲 Pending |
 
 **Lưu ý schema critical:** `telegram_onboarding_tokens.user_id` PHẢI là nullable vì user chưa tồn tại khi /start được gọi lần đầu.
@@ -129,6 +129,29 @@
 1. `asyncpg` không cho phép nhiều SQL commands trong một `op.execute()` → split thành nhiều lời gọi riêng
 2. `server_default="'{}'"` cho JSONB bị double-quoted bởi asyncpg → fix: dùng `server_default=sa.text("'{}'")`
 3. `:true`/`:false` trong JSON string bị SQLAlchemy hiểu là named bind params → fix: dùng parameterized INSERT với `json.dumps()` thay vì inline JSON literal
+
+### Kết quả Task 0.2.5 (2026-03-26)
+
+**File đã tạo:** `backend/app/repositories/user_repo.py`
+
+**Public interface:**
+
+| Symbol | Loại | Mô tả |
+|--------|------|--------|
+| `CreateUserData` | `@dataclass(frozen=True)` | DTO cho `create()` — email, google_id, full_name, avatar_url, email_verified, referral_code, referred_by_user_id |
+| `TelegramLinkData` | `@dataclass(frozen=True)` | DTO cho `update_telegram_link()` — telegram_chat_id, telegram_username |
+| `UserRepository.find_by_google_id(google_id)` | async method | Tìm user active theo Google sub, trả `User \| None` |
+| `UserRepository.find_by_telegram_chat_id(chat_id)` | async method | Tìm user active theo Telegram chat ID, trả `User \| None` |
+| `UserRepository.find_by_id(user_id)` | async method | Tìm user theo PK |
+| `UserRepository.find_by_email(email)` | async method | Tìm user active theo email |
+| `UserRepository.create(data)` | async method | Insert user mới, flush + refresh, trả instance mới từ DB |
+| `UserRepository.update_telegram_link(user_id, link)` | async method | Gán telegram_chat_id + telegram_linked_at, flush + refresh |
+
+**Thiết kế:**
+- Constructor nhận `AsyncSession` (injected) — caller quản lý commit/rollback
+- Tất cả mutations dùng `flush()` + `refresh()` → trả instance mới từ DB (immutable pattern)
+- `create()` tự sinh `referral_code` nếu không truyền vào
+- `update_telegram_link()` raise `ValueError` nếu user không tồn tại
 
 ---
 
