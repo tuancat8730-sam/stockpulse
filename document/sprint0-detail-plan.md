@@ -71,7 +71,7 @@
 | 0.2.3 | Alembic migrations — 6 files theo sprint scope (không tạo P3/P4 tables): `001_auth_users`, `002_subscriptions`, `003_watchlist`, `004_newsletter`, `005_market_data`, `006_analytics` | `backend/alembic/versions/` | 0.5d | 0.2.2 | ✅ Done |
 | 0.2.4 | Seed data: `subscription_plans` (free/pro/premium) + `stock_tickers` từ HOSE/HNX/UPCOM CSV | `backend/alembic/versions/002` | 0.25d | 0.2.3 | ✅ Done (subscription_plans seeded trong migration 002) |
 | 0.2.5 | `UserRepository`: `find_by_google_id`, `find_by_telegram_chat_id`, `create`, `update_telegram_link` — tất cả return new objects (immutable) | `backend/app/repositories/user_repo.py` | 0.25d | 0.2.2 | ✅ Done |
-| 0.2.6 | Unit tests: schema constraints (unique, check), repository CRUD với test DB | `backend/tests/unit/test_user_repo.py` | 0.25d | 0.2.5 | 🔲 Pending |
+| 0.2.6 | Unit tests: schema constraints (unique, check), repository CRUD với test DB | `backend/tests/unit/test_user_repo.py` | 0.25d | 0.2.5 | ✅ Done |
 
 **Lưu ý schema critical:** `telegram_onboarding_tokens.user_id` PHẢI là nullable vì user chưa tồn tại khi /start được gọi lần đầu.
 
@@ -152,6 +152,31 @@
 - Tất cả mutations dùng `flush()` + `refresh()` → trả instance mới từ DB (immutable pattern)
 - `create()` tự sinh `referral_code` nếu không truyền vào
 - `update_telegram_link()` raise `ValueError` nếu user không tồn tại
+
+### Kết quả Task 0.2.6 (2026-03-26)
+
+**Files đã tạo:**
+
+| File | Số tests | Coverage |
+|------|----------|----------|
+| `backend/tests/conftest.py` | — (fixtures) | — |
+| `backend/tests/unit/test_user_repo.py` | 18 tests | `user_repo.py`: 100% |
+| `backend/tests/unit/test_config.py` | 8 tests | `config.py`: 98% |
+
+**Test cases (26 total, 26 passed):**
+- `TestCreate`: insert user, referral_code generation, custom code, referral link, duplicate email/google_id constraints
+- `TestFindByGoogleId`: found / not found
+- `TestFindByTelegramChatId`: before/after linking
+- `TestUpdateTelegramLink`: sets chat_id + timestamp, no username, unknown user raises ValueError, duplicate chat_id constraint
+- `TestFindHelpers`: find_by_email, find_by_id
+- `TestConfig`: URL converter, secret key length, production/development flags
+
+**Coverage tổng:** 90.54% (vượt ngưỡng 80%)
+
+**Thiết kế test isolation:**
+- Dùng `NullPool` tránh asyncpg connection-pool state leak giữa các tests
+- Mỗi test có `AsyncSession` riêng với `session.begin()` + rollback sau test → DB không bị ô nhiễm
+- `join_transaction_mode="create_savepoint"` bị loại bỏ vì conflict với asyncpg async protocol
 
 ---
 
