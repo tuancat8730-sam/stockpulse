@@ -185,9 +185,29 @@
 | Task ID | Task | File / Output | Effort | Depends on |
 |---------|------|---------------|--------|------------|
 | 0.3.1 | `AuthService`: generate CSRF state → store trong `oauth_sessions`, build Google OAuth URL, exchange code cho tokens via `httpx`, extract user info từ ID token, create/update `users`, bind `telegram_chat_id` từ `link_token` | `backend/app/services/auth_service.py` | 0.5d | 0.2.5 | ✅ Done |
-| 0.3.2 | FastAPI auth routes: `GET /api/auth/google?token=<link_token>` (redirect to Google) + `GET /api/auth/callback` (exchange code, link Telegram, redirect to success page) | `backend/app/routers/auth.py` | 0.25d | 0.3.1 |
+| 0.3.2 | FastAPI auth routes: `GET /api/auth/google?token=<link_token>` (redirect to Google) + `GET /api/auth/callback` (exchange code, link Telegram, redirect to success page) | `backend/app/routers/auth.py` | 0.25d | 0.3.1 | ✅ Done |
 | 0.3.3 | Next.js callback page: hiển thị "Đã liên kết thành công! Quay lại Telegram" + deeplink `tg://resolve?domain=<bot_username>` | `frontend/app/auth/callback/page.tsx` | 0.25d | 0.3.2 |
 | 0.3.4 | Integration tests OAuth flow: new user creation, existing user update, token linking, expired token rejection, duplicate link attempt | `backend/tests/integration/test_auth_flow.py` | 0.25d | 0.3.1, 0.3.2 |
+
+### Kết quả Task 0.3.2 (2026-03-26)
+
+**Files đã tạo:**
+
+| File | Nội dung |
+|------|----------|
+| `backend/app/routers/auth.py` | 2 routes: `GET /api/auth/google` + `GET /api/auth/callback` |
+| `backend/app/main.py` | FastAPI app với lifespan (init/close DB), mount auth router |
+
+**Routes:**
+
+| Route | Query params | Hành vi |
+|-------|-------------|---------|
+| `GET /api/auth/google` | `chat_id: int` | Gọi `AuthService.begin_login(chat_id)` → 302 redirect tới Google consent page |
+| `GET /api/auth/callback` | `code`, `state`, `error?` | Nếu có `error` (user denied) → redirect với `?error=`. Gọi `AuthService.handle_callback()` → redirect `{FRONTEND_URL}/auth/callback?linked=1&email=…&chat_id=…` |
+
+**Error handling:** tất cả `AuthError` được catch và redirect về frontend với `?error=<message>` thay vì trả HTTP 500 — tránh lộ internal error ra browser.
+
+---
 
 ### Kết quả Task 0.3.1 (2026-03-26)
 
